@@ -2,12 +2,16 @@ package com.liguang.waveview;
 
 import android.animation.TimeInterpolator;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.SystemClock;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AnimationUtils;
 import android.view.animation.LinearInterpolator;
 
 import java.util.ArrayList;
@@ -15,7 +19,10 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Created by Administrator on 2016/6/24.
+ * Sample:
+ *
+ * Created by liguang on 2016/6/24.
+ * @Author passionli@vip.qq.com
  */
 public class WaveView extends View {
     private static final String TAG = WaveView.class.getSimpleName();
@@ -24,19 +31,37 @@ public class WaveView extends View {
     private int mX;
     private int mY;
     private double mMin;
-    private TimeInterpolator mTimeInterpolator = new LinearInterpolator();
-    private long mInterval = 250;
+    // The time interpolator to be used if none is set on the animation
+    private static final TimeInterpolator sDefaultInterpolator =
+            new AccelerateDecelerateInterpolator();
+    private TimeInterpolator mInterpolator = sDefaultInterpolator;
+    private static final long sDefaultDelay = 1000;
+    private long mDelay = sDefaultDelay;
     private boolean mStarted;
     private Runnable mProduceCircleRunnable;
-    private long mDuration = 5000;
+    private long mDuration = 3000;
     private int mColor = Color.BLUE;
+    private Paint.Style mStyle = Paint.Style.FILL;
 
-    public void setTimeInterpolator(TimeInterpolator interpolator){
-        this.mTimeInterpolator = interpolator;
+    /**
+     * Like {@link android.animation.ValueAnimator#setInterpolator(TimeInterpolator) ValueAnimator.setInterpolator(TimeInterpolator)}
+     * @param interpolator
+     */
+    public void setInterpolator(TimeInterpolator interpolator){
+        if (interpolator != null){
+            mInterpolator = interpolator;
+        }else {
+            mInterpolator = new LinearInterpolator();
+        }
     }
 
-    public void setInterval(long interval){
-        this.mInterval = interval;
+    /**
+     * Like
+     * {@link android.view.animation.LayoutAnimationController#setDelay(float) LayoutAnimationController.setDelay(float)}
+     * @param delay for every circle
+     */
+    public void setDelay(long delay){
+        this.mDelay = delay;
     }
 
     public void setDuration(long duration) {
@@ -44,19 +69,37 @@ public class WaveView extends View {
     }
 
     public WaveView(Context context) {
-        super(context);
+        this(context,null);
     }
 
     public WaveView(Context context, AttributeSet attrs) {
-        super(context, attrs);
+        this(context,attrs,0);
     }
 
     public WaveView(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
+        this(context,attrs,defStyleAttr,0);
     }
 
     public WaveView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.WaveView);
+        mDelay = (long) typedArray.getFloat(R.styleable.WaveView_wave_delay, sDefaultDelay);
+        mColor = typedArray.getColor(R.styleable.WaveView_wave_color,Color.BLUE);
+        mDuration = (long) typedArray.getFloat(R.styleable.WaveView_wave_duration, 3000);
+        if (typedArray.hasValue(R.styleable.WaveView_wave_style))
+            mStyle = Paint.Style.valueOf(typedArray.getString(R.styleable.WaveView_wave_style));
+        final int resID = typedArray.getResourceId(
+                R.styleable.WaveView_wave_interpolator,
+                android.R.anim.accelerate_decelerate_interpolator); // default to linear interpolator
+        if (resID > 0) {
+            setInterpolator(AnimationUtils.loadInterpolator(context, resID));
+        }
+
+        typedArray.recycle();
+        init();
+    }
+
+    private void init() {
     }
 
     @Override
@@ -66,6 +109,7 @@ public class WaveView extends View {
         mY = getHeight() / 2;
         mMin = Math.min(mX, mY);
         mPaint.setColor(mColor);
+        mPaint.setStyle(mStyle);
     }
 
     public void start(){
@@ -80,7 +124,7 @@ public class WaveView extends View {
             public void run() {
                 mCircles.add(new Circle());
                 invalidate();
-                postDelayed(this, mInterval);
+                postDelayed(this, mDelay);
             }
         };
         post(mProduceCircleRunnable);
@@ -95,15 +139,16 @@ public class WaveView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        Log.d(TAG,"size = " + mCircles.size());
         Iterator<Circle> iterator = mCircles.iterator();
         while (iterator.hasNext()){
             Circle circle = iterator.next();
-            if (isRunning())
-                circle.Compute();
-            mPaint.setAlpha(circle.getAlpha());
-            canvas.drawCircle(mX, mY, circle.getRadius(),mPaint);
+            circle.Compute();
             if (circle.isExpired()){
                 iterator.remove();
+            }else{
+                mPaint.setAlpha(circle.getAlpha());
+                canvas.drawCircle(mX, mY, circle.getRadius(),mPaint);
             }
         }
 
@@ -117,6 +162,10 @@ public class WaveView extends View {
 
     public boolean isRunning() {
         return mStarted == true;
+    }
+
+    public void setStyle(Paint.Style style) {
+        this.mStyle = style;
     }
 
     private class  Circle{
@@ -147,12 +196,11 @@ public class WaveView extends View {
                 startTime = now;
             }
 
-            if (now - startTime > mDuration){
+            if (now - startTime >= mDuration){
                 isExpired = true;
-                return;
             }
 
-            float radio = WaveView.this.mTimeInterpolator.getInterpolation((float) (now - startTime)/mDuration);
+            float radio = WaveView.this.mInterpolator.getInterpolation((float) (now - startTime)/mDuration);
             if (radio > 1){
                 radio = 1;
             }

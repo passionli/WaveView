@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="WaveView">
+        <attr name="wave_delay" format="float"></attr>
+        <attr name="wave_duration" format="float"></attr>
+        <attr name="wave_color" format="color"></attr>
+        <attr name="wave_style" format="string"></attr>
+        <attr name="wave_interpolator" format="reference"></attr>
+    </declare-styleable>
+</resources>

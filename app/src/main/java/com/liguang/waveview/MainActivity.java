@@ -1,23 +1,24 @@
 package com.liguang.waveview;
 
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
-import android.view.animation.AccelerateInterpolator;
 
 public class MainActivity extends AppCompatActivity {
 
+    int[] mWaveViews = {R.id.waveView1,R.id.waveView2,R.id.waveView3,R.id.waveView4};
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        final WaveView view = (WaveView) findViewById(R.id.waveView);
-        view.setInterval(1000);
+        final WaveView view = (WaveView) findViewById(R.id.waveView1);
+        view.setDelay(250);
         view.setDuration(3000);
-        view.setTimeInterpolator(new AccelerateInterpolator());
-        view.setCircleColor(Color.YELLOW);
+        view.setCircleColor(Color.BLUE);
+        view.setStyle(Paint.Style.STROKE);
         view.start();
         view.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -29,6 +30,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        for (int id : mWaveViews){
+            ((WaveView) findViewById(id)).start();
+        }
+
 
 //        Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
 //            @Override
