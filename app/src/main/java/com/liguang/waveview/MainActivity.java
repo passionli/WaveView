@@ -17,8 +17,8 @@ public class MainActivity extends AppCompatActivity {
         final WaveView view = (WaveView) findViewById(R.id.waveView1);
         view.setDelay(250);
         view.setDuration(3000);
-        view.setCircleColor(Color.BLUE);
-        view.setStyle(Paint.Style.STROKE);
+        view.setWaveColor(Color.BLUE);
+        view.setWaveStyle(Paint.Style.STROKE);
         view.start();
         view.setOnClickListener(new View.OnClickListener() {
             @Override
